@@ -24,7 +24,7 @@ All our SQL queries will be based on the following database schema.
 	Sells(bar(!), beer(!), price)
 	Frequents(drinker(!), bar(!))
 
-Useing Beers(name, manf), what beers are made by Anheuser-Busch?
+Using Beers(name, manf), what beers are made by Anheuser-Busch?
 	SELECT name
 	FROM  Beers
 	WHERE manf = 'Anheuser-Busch';
@@ -116,10 +116,10 @@ Other way to do it:
 
 Example Self-Join:
 
-From Beers(name, manf) fina all pairs of beers by the same
+From Beers(name, manf) find all pairs of beers by the same
 manufacturer
 Also do not produce pairs like (Bud, Bud)
-Produce pairs in alphabedtic order like: (Bud, Miller)
+Produce pairs in alphabetic order like: (Bud, Miller)
 
 SELECT b1.name, b2.name
 FROM Beers b1, Beers b2
@@ -142,3 +142,142 @@ The IN Operator
 SELECT * FROM Beers WHERE name IN (SELECT beer
 									FROM Likes
 									WHERE drinker = 'Fred');
+
+9/13 Lecture Notes:
+What does this query return?
+
+SELECT L1.drinker
+FROM Likes L1, Likes L2
+WHERE L1.drinker=L2.drinker AND
+	NOT(L1.beer=L2.beer)
+
+Ans: Drinkers who like at least two beers
+
+Example: In
+Using Beers and Likes find the name of the manuf of each beer that
+Fred likes
+
+SELECT *
+FROM Beers
+WHERE Name IN (SELECT beer
+				FROM Likes
+				WHERE drinker = 'Fred')
+
+OR we can do it with a join
+
+SELECT a
+FROM R, S
+WHERE R.b = S.b;
+
+The Exists Operator:
+EXSISTS(<subquery>)
+
+Example:
+SELECT name
+FROM Beers b1
+WHERE NOT EXISTS(
+	SELECT *
+	FROM Beers
+	WHERE manf = b1.manf AND
+		Name <> b1.name);
+
+This is looking for manufacturers that make more that one beer
+
+Question: what does this query return?
+
+SELECT s.bar FROM sells s
+WHERE (s.beer = 'Corona') OR (s.beer='Bud') AND
+NOT EXSISTS( SELECT s1.bar
+			 FROM sells s1, sells s2
+			 WHERE (s1.beer = 'Corona') AND (s2.beer = 'Bud')
+			 AND (s.bar = s1.bar) AND (s.bar = s2.bar))
+
+Ans: Bars which server Corona or Bud, but not both
+
+Keyword: All
+From sells find the beers sold for the highest price
+
+SELECT beer
+FROM sells
+WHERE price >= ALL(SELECT price FROM sells)
+
+Keyword: UNION
+Union, intersection and difference of relations are
+expressed by the following forms. Each involving subqueries
+(<subQ>) UNION (<subQ>)
+
+What does this Query return?
+SELECT b.name
+FROM bar B
+WHERE NOT EXSISTS (SELECT * FROM frequents F
+				   WHERE f.bar = b.name)
+
+Ans: Bars which are not frequented by anybody
+
+Bag Semantics:
+SELECT-FROM-WHERE statements use bag semantics, but the default
+union, intersections and difference is set semantics -- that is
+duplicates are eliminated as the operation is applied
+
+Force results to be a set by: SELECT DISTINCT
+Force results to be a bad (i.e., don't elmin dups) by ALL,
+as in ...UNION ALL...
+
+Example DISTINCT:
+From sells find all prices charged for beers:
+
+SELECT DISTINCT price
+FROM sells
+
+Without distinct each price would be listed as many times
+as there were bar/beer pairs at that price
+
+Join Expressions:
+SQL provides several versions of bag joins
+These expressions can be stand-alone queries or used in 
+place of relation in a FROM cause
+
+Products and Natural Joins
+
+Natural join:
+	R NATURAL JOIN S;
+
+Product:
+	R CROSS JOIN S;
+
+Example:
+	Likes NATURAL JOIN sells
+
+Relations can be parenthesized subqueries as well
+
+Theta Join:
+R JOIN S ON <condition>
+
+Simple stuff:
+Easy queries (three liners SELECT-FROM-WHERE)
+
+Not-So-Simple:
+The word Only implies negation so we can't do it in just three
+lines
+"Not Exists" is another sign that you'll need a negation and 
+possibly even a 'not exists' statement
+
+Monotonic vs Non-Monotonic Test:
+
+Easy query: The bigger the database the bigger the answer
+Hard query: The size of the database doesn't necessarily 
+increase the size of the answer Example: List the students
+not taking databases. If we increase the database by 10 million
+students, but they're all taking databases then the size of the 
+answer doesn't change.
+
+Outerjoins:
+
+R OUTER JOIN S is the core of an outerjoin expression. It is
+modified by:
+1. Optional NATURAL in front of OUTER
+2. Optional ON <condition> after JOIN
+3. Optional LEFT, RIGHT, or FULL before OUTER
+	LEFT = pad dangling tuples of R only
+	RIGHT = pad dangling tuples of S only
+	FULL = pad both; this choice is the default 
