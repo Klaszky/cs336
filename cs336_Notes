@@ -1,1 +1,144 @@
 cs336_Notes
+
+Introduction to SQL
+SQL:
+	-very-high-level language
+	-avoid a lot of data-manipulation details needed in procedural
+	languages like java and C++
+	-declarative vs procedural
+	-Database management system figures out 'best' way to execute
+	query -- this is call 'query optimization' --
+
+Monotonic queries -- Three-liners:
+	SELECT desired attributes
+	FROM one or more tables
+	WHERE condition about tuples of tables
+
+All our SQL queries will be based on the following database schema.
+	(key attribute has a (!) next to it)
+
+	Beers(name(!), manf)
+	Bars(name(!), addr, license)
+	Drinkers(name(!), addr, phone)
+	Likes(drinker(!), beer(!))
+	Sells(bar(!), beer(!), price)
+	Frequents(drinker(!), bar(!))
+
+Useing Beers(name, manf), what beers are made by Anheuser-Busch?
+	SELECT name
+	FROM  Beers
+	WHERE manf = 'Anheuser-Busch';
+
+	Result:
+	|name    |
+	---------
+	|Bud     |
+	|Bud Lite|
+	|Michelob|
+	|.....   |
+
+Meaning of Single-Relation Query
+	Begin with the relation in the FROM clause
+	Apply the selection indicate by the WHERE clause
+	Apply the extended projection indicated by the SELECT clause
+
+Can also think of it as a for loop. 
+For tuple t in Beers check if current manf = 'Anheuser-Busch', if 
+yes, select the clause using the components of this tuple
+
+You can rename an attribute in a select clause with "AS <new name>"
+and you can also perform operations on thins.
+
+Example (Using Sells(bar, beer, price)):
+
+	SELECT bar, beer, price*114 AS priceInYen
+	FROM Sells;
+
+You can also use logical AND, OR and NOT. Also, <, >, <=, >=, =
+
+Can also do Pattern matching: 
+	<Attribute> LIKE <pattern> OR
+	<Attribute> NOT LIKE <pattern>
+
+Pattern: is a quoted string with % = 'any string'; = 'any 
+character'
+
+* = wild card
+<> = not equal
+Escape characters seem to be doubling them. Example:
+	SELECT price
+	FROM Sells
+	WHERE bar = 'Joe''s Bar' AND beer = 'Bud';
+
+What does this do:
+	SELECT bar FROM Sells WHERE beer <> 'Heineken'
+This returns a list of bars that sell at lease one beer 
+that is not Heineken
+
+If we want all the bars that do not sell Heineken we need
+to find all the beers that do and subtract them from the whole
+
+What does this do?
+	SELECT drinker FROM Likes WHERE beer = 'Corona' AND beer = 
+	'Bud'
+This does nothing because the beer is only a single string and 
+this statement must be two different strings at the same time.
+
+LIKE Example:
+Using Drinkers(name, addr, phone) find the drinkers with exchange
+555:
+	SELET name
+	FROM Drinker
+	WHERE phone LIKE '%555-_ _ _ _';
+
+Multinational Queries:
+Interesting queries often combine data from more than one
+relations.
+JOIN is the way to combine different tables and see what is common
+between them.
+
+Example: Joining Two Relations
+Using relations Likes(drinker, beer) and Frequents(drinker, bar)
+find the beers like by at lease one person who frequents Joe's bar
+
+	SELECT beer
+	FROM Likes, Frequents
+	WHERE bar = 'Joe''s Bar' AND Frequents.drinker =
+		Likes.drinker;
+
+Apparently this isn't the fastest way to solve this problem 
+though because this is doing a whole 'Cartesian product'
+
+Other way to do it:
+	Select L.beer
+	FROM Likes L JOIN Frequents F ON L.drinker=F.drinker
+	WHERE F.bar='Joe''s'
+
+Example Self-Join:
+
+From Beers(name, manf) fina all pairs of beers by the same
+manufacturer
+Also do not produce pairs like (Bud, Bud)
+Produce pairs in alphabedtic order like: (Bud, Miller)
+
+SELECT b1.name, b2.name
+FROM Beers b1, Beers b2
+WHERE...
+
+Subquery:
+You can add another query inside of a query
+
+Query + Subquery Solution
+SELECT bar
+FROM Sells
+WHERE beer = 'Miller' and price = (SELECT price
+									FROM Sells
+									WHERE bar = 'Joe''s Bar'
+									AND beer = 'Bud');
+
+The IN Operator
+<tuple> in (<subquery>)
+
+SELECT * FROM Beers WHERE name IN (SELECT beer
+									FROM Likes
+									WHERE drinker = 'Fred');
