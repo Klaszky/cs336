@@ -1,0 +1,133 @@
+#Note: I'm treating Bud and Budweiser as two distinct drinks. It wasn't made clear if they are unique or not
+#and drinker John likes both of them so I figured they were different.
+#Same goes with Hefeweizen and Hefeweizen Doppelbock
+
+#1
+SELECT DISTINCT drinker 
+FROM likes 
+WHERE beer = 'Michelob Amber Bock' OR beer = 'Budweiser';
+
+John
+Mike
+
+#2
+SELECT DISTINCT bar 
+FROM sells 
+WHERE beer <> 'Budweiser';
+
+A.P. Stump's
+Hedley Club
+Blue Angel
+Eulipia
+Blue Tattoo
+The Backbeat
+The B-Hive
+Caravan
+The Shark and Rose
+Giza Hookah Lounge
+
+#3
+SELECT beer 
+FROM sells 
+WHERE bar = 'Gecko Grill' AND beer <> 'Hefeweizen';
+
+Budweiser
+
+#4
+SELECT DISTINCT drinker 
+FROM likes 
+WHERE drinker <> 'John'
+AND beer IN (SELECT beer FROM likes WHERE drinker = 'John');
+
+Mike
+Vince
+
+#5
+SELECT F.drinker, F.bar 
+FROM frequents F, sells S, likes L
+WHERE F.drinker = L.drinker AND L.beer = S.beer AND S.bar = F.bar;
+
+John	Cabana
+John	Caravan
+Mike	Cabana
+Mike	The Shark and Rose
+Mike	A.P. Stump's
+Jesse	Blue Angel
+Mike	Blue Angel
+Mike	The Shark and Rose
+
+#6
+SELECT bar 
+FROM (SELECT bar FROM frequents WHERE drinker = 'John' OR drinker = 'Rebecca') B
+WHERE bar NOT IN (SELECT f2.bar FROM frequents f1, frequents f2 WHERE f1.bar = f2.bar AND f1.drinker = 'John' AND f2.drinker = 'Rebecca');
+
+Cabana
+Caravan
+Coconut Willie's Cocktail Lounge
+Gecko Grill
+
+#7
+SELECT drinker 
+FROM (SELECT count(bar) AS numBars, drinker FROM frequents GROUP BY drinker) AS B 
+WHERE B.numBars >= 3;
+
+Joe
+John
+Mike
+Rebecca
+Vince
+
+#8
+SELECT DISTINCT F.drinker 
+FROM frequents F 
+WHERE F.bar IN (SELECT S.bar FROM sells S, likes L WHERE S.beer = L.beer AND F.drinker = L.drinker);
+
+John
+Mike
+Jesse
+
+#9
+SELECT DISTINCT beer 
+FROM sells 
+WHERE bar IN (SELECT bar FROM frequents WHERE drinker = 'John');
+
+Hefeweizen Doppelbock
+Original Premium Lager Dog
+Budweiser
+
+#10
+SELECT DISTINCT bar 
+FROM sells 
+WHERE bar IN (SELECT bar 
+			  FROM sells 
+			  WHERE beer IN (SELECT beer FROM likes WHERE drinker = 'John' OR drinker = 'Rebecca') 
+			  AND price < '5.00');
+
+Club 175
+Coconut Willie's Cocktail Lounge
+Gecko Grill
+Giza Hookah Lounge
+Seven Bamboo
+The Shark and Rose
+The Backbeat
+
+#11
+SELECT L1.drinker 
+FROM likes L1, likes L2
+WHERE L1.drinker = L2.drinker
+AND	L1.beer = 'Hefeweizen'
+AND L2.beer = 'Killian''s';
+
+*Empty*
+
+#12 
+#Note: I included the statment "OR name LIKE '% The %'" because I know of a real bar called
+#"Ray's The Steaks" which is a really terrible pun.
+SELECT name 
+FROM bars 
+WHERE name LIKE 'The %' OR name LIKE '% The %';
+
+The B-Hive
+The Backbeat
+The Blank Club
+The Shark and Rose
