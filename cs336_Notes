@@ -4,7 +4,7 @@ Introduction to SQL
 SQL:
 	-very-high-level language
 	-avoid a lot of data-manipulation details needed in procedural
-	languages like java and C++
+	languages like Java and C++
 	-declarative vs procedural
 	-Database management system figures out 'best' way to execute
 	query -- this is call 'query optimization' --
@@ -154,7 +154,7 @@ WHERE L1.drinker=L2.drinker AND
 Ans: Drinkers who like at least two beers
 
 Example: In
-Using Beers and Likes find the name of the manuf of each beer that
+Using Beers and Likes find the name of the manf of each beer that
 Fred likes
 
 SELECT *
@@ -269,7 +269,7 @@ Hard query: The size of the database doesn't necessarily
 increase the size of the answer Example: List the students
 not taking databases. If we increase the database by 10 million
 students, but they're all taking databases then the size of the 
-answer doesn't change.
+answer doesn't change. (I'm thinking this isn't a great example...)
 
 Outerjoins:
 
@@ -281,3 +281,127 @@ modified by:
 	LEFT = pad dangling tuples of R only
 	RIGHT = pad dangling tuples of S only
 	FULL = pad both; this choice is the default 
+
+9/13 Recitation:
+
+Notes were done in MYSQL workbench...
+
+9/18 Lecture Notes:
+
+Tough vs Easy SQL queries
+
+How to recognize a "tough" SQL query?
+3-Liners are easy (SELECT-FROM-WHERE). Some other aggregate
+queries are also easy even though it takes 4-5 lines.
+But many queries require nested subqueries. Often with
+correlated variables.
+Is there any way to know just by reading the query in English?
+Yes!
+
+Semantic vs syntactic test:
+
+Does a query require negation?
+Monotone/Non-monotone queries
+A great test to "feel" if your query will need negation 
+(EXCEPT, NOT EXSISTS, etc.). Ask yourself the following question:
+couple a tuple in the result of your query disappear as a result of
+adding more tuples to the underlying database? If so, the query
+is very likely "non-monotonic" and will require negation, although
+some aggregates will also have this effect (i.e. COUNT, AVG,
+MAX, MIN will change as result of adding extra tuple etc.)
+Or -- can you make a non-empty result empty by adding more
+stuff to the database (example is first example)
+The word "only" is the easiest way to a 
+
+Examples: (Monotonic or Non-Monotonic)
+Drinkers who do not frequent Joe's bar: Non-Monotonic
+Drinkers who frequent only Joe's bar: Non-Monotonic
+Drinkers who frequent exactly two bars: Non-Monotonic
+Drinkers who frequent at least two bars: Monotonic 
+Beers which are served in all bars: Non-Monotonic
+Bars which serve all beers that Steve likes: Non-Monotonic
+Drinkers who frequent bars which serve some beer they like:
+Monotonic
+Drinkers who only frequent vars which server beers they like:
+Non-Monotonic
+Bars with beer prices at most $6: Non-Monotonic (because adding
+one beer that is over $6 will reduce the size)
+Bars with beer prices at least $6: Monotonic
+
+Example (sort of double negation):
+Drinkers who frequent ONLY 'Cabana'
+SELECT DISTINCT f.drinker
+FROM frequents f
+WHERE f.bar = 'Cabana' AND
+NOT EXSISTS (SELECT *
+FROM frequents f1
+WHERE f1.drinker=f.drinker AND f1.bar <> 'Cabana')
+
+There are a list of challenging queries in word document with 
+the mono vs non-mono notes.
+
+Outerjoins (full not supported in MYSQL)
+-R OUTER JOIN S is the core of an outerjoin expression. It is
+modified by
+	1. NATURAL
+	2. ON
+	3. LEFT, RIGHT or FULL
+LEFT = pad dangling tuples of R only
+RIGHT = pad dangling tuples of S only
+FULL = pad both
+
+What does this query do?
+SELECT drinker, l.beer
+FROM likes l LEFT JOIN sells s ON l.beer=s.beer
+WHERE s.beer IS NULL
+
+This returns drinkers and beers where a drinker likes a beer and
+no bar sells that beer
+
+What does this query do?
+SELECT bar, s.beer
+FROM likes l RIGHT JOIN sells s ON l.beer=s.beer
+WHERE s.beer IS NULL
+
+This returns bars and beers where a bar serves a beer that no one
+likes that beer
+
+Notes on NULL values
+1. The treatment of NULL by SQL using 3-valued logic is INCORRECT
+2. my example with tautology showed that 3-valued logic will
+not be able to return correct result because the WHERE clause
+condition is TRUE no matter what the value is - even if it is
+unknown instead SQL will return Maybe OR Maybe = Maybe (not True)
+SELECT beers.name
+FROM beers
+WHERE price < '5.00' OR price >= '5.00'
+The condition is always TRUE (tautology) but 3-valued logic would
+never detect it
+3. OK, so big deal- who would write a query like the one above?
+It is the user's fault! No, ...
+
+Aggregations:
+SUM, AVG, COUNT, MIN, and MAX can be applied to a column in a
+SELECT clause to produce that aggregation on the column
+Also, COUNT(*) counts the number of tuples
+
+Example: aggregation
+From sells find the avg price of Bud
+SELECT AVG(price)
+FROM sells
+WHERE beer = 'Bud';
+
+Eliminating duplicates in aggregation:
+Using DISTINCT inside aggregation is a risky move
+
+Grouping:
+Example: Grouping
+From sells find avg price for each beer
+SELECT beer, AVG(price)
+FROM sells
+GROUP BY beer;
+
+If any aggregation is used you must use a GROUP BY.
+
+Also, this allows us to introduce HAVING clause which is like where
+but for groups.
